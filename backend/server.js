@@ -1,23 +1,27 @@
 const express = require('express');
-const bodyParser = require('body-parser');
-const path = require('path');
-require('dotenv').config();
+const { pool, poolConnect } = require('./db'); // import the pool and poolConnect
+const userRoutes = require('./routes/users'); // assuming you have routes set up in users.js
+
 const app = express();
+const PORT = process.env.PORT || 5000;
 
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.json());
 
-app.use(express.static(path.join(__dirname, 'build')));
-
-app.use('/api/users', require('./routes/users'));
-app.use('/api/notes', require('./routes/notes'));
-
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'build', 'index.html'));
+// Middleware to use before your routes are handled
+app.use((req, res, next) => {
+    req.pool = pool; // Make pool accessible in the request object
+    next();
 });
 
-// Choose your port
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+// Routes
+app.use('/api/users', userRoutes); // Use userRoutes
+
+// Wait for the pool connection before starting the server
+poolConnect.then(() => {
+    app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
+    });
+}).catch((err) => {
+    console.error('App starting error:', err.stack);
+    process.exit(1);
 });

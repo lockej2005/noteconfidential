@@ -1,91 +1,76 @@
-// routes/users.js
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { Connection, Request } = require('tedious');
+const { sql } = require('../db'); // Import sql to use SQL types
 const router = express.Router();
-
-// Connection configuration moved to a separate module or file for reusability
-const connection = require('../db'); // This should be your configured tedious connection
-
-// Helper function to execute SQL query
-const executeSql = (sql, callback) => {
-  const request = new Request(sql, (err, rowCount, rows) => {
-    if (err) {
-      console.error(err);
-      callback(err);
-    } else {
-      callback(null, { rowCount, rows });
-    }
-  });
-
-  connection.execSql(request);
-};
 
 // User signup
 router.post('/signup', async (req, res) => {
-  try {
     const { name, email, password } = req.body;
+    const pool = req.pool; // Get the pool from the request object
 
     // Encrypt password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // SQL query to check if user exists and to insert a new user
-    const checkUserSql = `SELECT * FROM Users WHERE Email = '${email}'`;
-    const insertUserSql = `INSERT INTO Users (Name, Email, Password) VALUES ('${name}', '${email}', '${hashedPassword}')`;
+    try {
+        const request = pool.request();
+        request.input('Email', sql.NVarChar, email);
 
-    // Check if user exists
-    executeSql(checkUserSql, (err, result) => {
-      if (err) return res.status(500).send('Server error');
+        // Check if user exists
+        const checkUserResult = await request.query('SELECT * FROM usersTbl WHERE Email = @Email');
+        if (checkUserResult.recordset.length > 0) {
+            return res.status(400).json({ message: 'User already exists' });
+        }
 
-      if (result.rowCount > 0) {
-        return res.status(400).json({ message: 'User already exists' });
-      } else {
         // Create user
-        executeSql(insertUserSql, (err, result) => {
-          if (err) return res.status(500).send('Server error');
+        request.input('Name', sql.NVarChar, name);
+        request.input('Password', sql.NVarChar, hashedPassword);
+        await request.query('INSERT INTO usersTbl (Name, Email, Password) VALUES (@Name, @Email, @Password)');
 
-          // Create token
-          const payload = { user: { email } }; // Payload typically contains user identification info
-          const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
+        // Create token
+        const payload = { user: { email } }; // Payload typically contains user identification info
+        const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
 
-          res.status(201).json({ token });
-        });
-      }
-    });
-  } catch (error) {
-    console.error(error.message);
-    res.status(500).send('Server error');
-  }
+        res.status(201).json({ token });
+    } catch (err) {
+        console.error('Error:', err);
+        res.status(500).send('Server error');
+    }
 });
 
 // User login
 router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
-  const checkUserSql = `SELECT * FROM Users WHERE Email = '${email}'`;
+    const { email, password } = req.body;
+    const pool = req.pool; // Get the pool from the request object
 
-  executeSql(checkUserSql, async (err, result) => {
-    if (err) return res.status(500).send('Server error');
+    try {
+        const request = pool.request();
+        request.input('Email', sql.NVarChar, email);
 
-    if (result.rowCount === 0) {
-      return res.status(400).json({ message: 'Invalid Credentials' });
+        // Check for user
+        const userResult = await request.query('SELECT * FROM usersTbl WHERE Email = @Email');
+        if (userResult.recordset.length === 0) {
+            return res.status(400).json({ message: 'Invalid Credentials' });
+        }
+
+        const user = userResult.recordset[0];
+
+        // Validate password
+        const isMatch = await bcrypt.compare(password, user.Password);
+        if (!isMatch) {
+            return res.status(400).json({ message: 'Invalid Credentials' });
+        }
+
+        // Create token
+        const payload = { user: { id: user.id, email: user.Email } }; // Adjust 'id', 'Email' if your column names are different
+        const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+        res.json({ token });
+    } catch (err) {
+        console.error('Error:', err);
+        res.status(500).send('Server error');
     }
-
-    const user = result.rows[0]; // Assuming you have logic to parse rows into a user object
-
-    // Validate password
-    const isMatch = await bcrypt.compare(password, user.Password);
-    if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid Credentials' });
-    }
-
-    // Create token
-    const payload = { user: { email: user.Email } };
-    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
-
-    res.json({ token });
-  });
 });
 
 module.exports = router;

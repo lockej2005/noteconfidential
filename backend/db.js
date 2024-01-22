@@ -1,34 +1,24 @@
-// db.js
-const { Connection } = require('tedious');
-require('dotenv').config();  // This is fine here but ensure it's also at the top of your main server file
+const sql = require('mssql');
+require('dotenv').config();
 
-// Create connection to your database
-const config = {
-  authentication: {
-    options: {
-      userName: process.env.DB_USER,  // Ensure this matches the variable name in your .env file
-      password: process.env.DB_PASS   // Ensure this matches the variable name in your .env file
-    },
-    type: 'default'
-  },
-  server: process.env.DB_SERVER,  // Ensure this matches the variable name in your .env file
-  options: {
-    database: process.env.DB_NAME,  // Ensure this matches the variable name in your .env file
-    encrypt: true,
-    rowCollectionOnRequestCompletion: true
-  }
-};
+const connectionString = `Server=tcp:noteconf.database.windows.net,1433;Initial Catalog=noteconfdb;Persist Security Info=False;User ID=noteconf;Password=${process.env.DB_PASS};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;`;
 
-console.log(config);  // Debugging: Ensure it prints the correct value
+const pool = new sql.ConnectionPool(connectionString);
 
-const connection = new Connection(config);
-
-connection.on('connect', err => {
-  if (err) {
-    console.error('Connection failed:', err);
-  } else {
-    console.log('Connected to the database.');
-  }
+pool.on('error', err => {
+    console.error('SQL pool error:', err);
 });
 
-module.exports = connection;
+const poolConnect = pool.connect();
+
+poolConnect.then(() => {
+    console.log('Connected to MSSQL');
+}).catch((err) => {
+    console.error('Database Connection Failed! Bad Config: ', err)
+});
+
+module.exports = {
+    sql, // to access sql types
+    pool, // to access the pool
+    poolConnect // to ensure connection before starting the server
+};

@@ -7,6 +7,7 @@ import CreatePage from './Front End/Create';
 import Note from './Front End/Note';
 
 import './App.css';
+require('dotenv').config()
 
 function App() {
   return (
