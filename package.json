@@ -3,19 +3,23 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@supabase/supabase-js": "^2.39.3",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.20.2",
-    "dotenv": "^16.3.1",
+    "crypto-browserify": "^3.12.0",
+    "crypto-js": "^4.2.0",
     "express": "^4.18.2",
     "jsonwebtoken": "^9.0.2",
+    "metro": "^0.80.4",
     "mongoose": "^8.1.0",
     "mssql": "^10.0.2",
+    "os-browserify": "^0.3.0",
+    "path-browserify": "^1.0.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-dotenv": "^0.1.3",
     "react-router-dom": "^6.21.2",
     "react-scripts": "5.0.1",
     "sequelize": "^6.35.2",
@@ -25,6 +29,12 @@
     "tweetnacl-util": "^0.15.1",
     "typeface-ibm-plex-mono": "^1.1.13",
     "web-vitals": "^2.1.4"
+  },
+  "browser": {
+    "fs": false,
+    "path": false,
+    "os": false,
+    "crypto": false
   },
   "scripts": {
     "start": "react-scripts start",
@@ -50,4 +60,5 @@
       "last 1 safari version"
     ]
   }
+  
 }

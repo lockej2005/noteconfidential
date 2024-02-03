@@ -5,21 +5,37 @@ import SignUp from './Front End/SignUp';
 import Dashboard from './Front End/Dashboard';
 import CreatePage from './Front End/Create';
 import Note from './Front End/Note';
+import { AuthProvider } from './Front End/AuthContext.js';
+import ProtectedRoute from './Front End/ProtectedRoute.js';
 
 import './App.css';
-require('dotenv').config()
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Login />} />
-        <Route path="/signup" element={<SignUp />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/create" element={<CreatePage />} />
-        <Route path="/Note" element={<Note />} />
-      </Routes>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <Routes>
+          <Route path="/" element={<Login />} />
+          <Route path="/signup" element={<SignUp />} />
+          <Route path="/dashboard" element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/create" element={
+            <ProtectedRoute>
+              <CreatePage />
+            </ProtectedRoute>
+          } />
+          {/* Update the path for the Note component to include the note ID */}
+          <Route path="/note/:id" element={
+            <ProtectedRoute>
+              <Note />
+            </ProtectedRoute>
+          } />
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 }
 

@@ -80,6 +80,10 @@ export const styles = {
         cursor: 'pointer',
         fontSize: '1em',
     },
+    link: {
+        textDecoration: 'none',
+    },
+
     notesList: {
         width: '80%',
         maxWidth: '600px',
@@ -87,6 +91,8 @@ export const styles = {
         borderRadius: '10px',
         padding: '1em',
         boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
+        maxHeight: '50vh', // set a max-height
+        overflowY: 'auto', // allow scrolling within the notes list
     },
     noteItem: {
         backgroundColor: 'rgba(255, 255, 255, 0.1)',
